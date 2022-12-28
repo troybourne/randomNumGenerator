@@ -1,0 +1,44 @@
+#include <WiFi.h>
+const int ARRAY_SIZE = 2;
+const int deviceID = 7;
+long randNumber;
+
+String str = "";
+
+int randomArray[ARRAY_SIZE]={0, 0};
+void setup() {
+
+  Serial.begin(115200);
+  Serial.println();
+  Serial.print("Your ESP Board MAC Address is:  ");
+  Serial.println(WiFi.macAddress());
+  // if analog input pin 0 is unconnected, random analog
+  // noise will cause the call to randomSeed() to generate
+  // different seed numbers each time the sketch runs.
+  // randomSeed() will then shuffle the random function.
+  randomSeed(analogRead(0));
+}
+
+void genRandomNum() {
+  str="";
+  // print a random number from 1 to 299
+  randomArray[0] = random(300);
+  Serial.println(randomArray[0]);
+
+  // print a random number from 10 to 19
+  randomArray[1] = random(10, 20);
+  Serial.println(randomArray[1]);
+    for (int i = 0; i < ARRAY_SIZE; i++) {
+    str.concat(randomArray[i]);
+    if (i < ARRAY_SIZE - 1) {
+      str.concat(",");
+    }
+  }
+  Serial.println(str);
+Serial.println(WiFi.macAddress());
+  delay(5000);
+}
+
+void loop(){
+  genRandomNum();
+}
