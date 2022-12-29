@@ -1,11 +1,31 @@
 #include <WiFi.h>
-const int ARRAY_SIZE = 2;
-const int deviceID = 7;
+#include <HTTPClient.h>
+
+#define DHTTYPE DHT11
+const char * ssid = "AcornLumaNet";
+const char * password = "TBOURNE5265";
+//const char * ssid = "Fios-JZOSU";
+//const char * password = "gem7070ace208pin";
+
+String serverName = "https://script.google.com/macros/s/AKfycbzoLezGNttAMrk2Hgzwa_oWNkW5xeR7Qslu1qkTmds4AZyEGvn3US38eMavkXacOWWI/exec";
+
+const int ARRAY_SIZE = 16;
+const int deviceID = 6;
 long randNumber;
+int numOfDevices = 16;
+
+// the following variables are unsigned longs because the time, measured in
+// milliseconds, will quickly become a bigger number than can be stored in an int.
+unsigned long lastTime = 0;
+// Timer set to 10 minutes (600000)
+//unsigned long timerDelay = 600000;
+// Set timer to 5 seconds (5000)
+unsigned long timerDelay = 5000;
+int counter = 1;
 
 String str = "";
 
-int randomArray[ARRAY_SIZE]={0, 0};
+int randomArray[ARRAY_SIZE]={0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 void setup() {
 
   Serial.begin(115200);
@@ -16,18 +36,36 @@ void setup() {
   // noise will cause the call to randomSeed() to generate
   // different seed numbers each time the sketch runs.
   // randomSeed() will then shuffle the random function.
+WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+ 
+  Serial.println("Timer set to 5 seconds (timerDelay variable), it will take 5 seconds before publishing the first reading.");
+
   randomSeed(analogRead(0));
 }
 
 void genRandomNum() {
   str="";
   // print a random number from 1 to 299
-  randomArray[0] = random(300);
-  Serial.println(randomArray[0]);
+  for(int ii = 0; ii < numOfDevices; ii++){
+  randomArray[ii] = random(300);
+  Serial.println(randomArray[ii]);
+  }
+randomArray[2]=100;  //this would be replaced with randomArray[deviceNum]=thisDeviceReadTemp
+//this is why it may be advantageous to unicast with a counting checkOR OR OR
+// ONLY the device sending to Google Sheets sends the full csv
+// or 
 
   // print a random number from 10 to 19
-  randomArray[1] = random(10, 20);
-  Serial.println(randomArray[1]);
+  //randomArray[1] = random(10, 20);
+  //Serial.println(randomArray[1]);
     for (int i = 0; i < ARRAY_SIZE; i++) {
     str.concat(randomArray[i]);
     if (i < ARRAY_SIZE - 1) {
@@ -39,6 +77,48 @@ Serial.println(WiFi.macAddress());
   delay(5000);
 }
 
+void postToGoogleSheets(){
+  //Send an HTTP POST request every 10 minutes
+  if ((millis() - lastTime) > timerDelay) {
+    //Check WiFi connection status
+    if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;
+      counter = counter*2;
+      if(counter>800000){counter=1;}
+      //String serverPath = serverName + "?date=1103&sensor="+counter;
+      String serverPath = serverName + "?date=1103&sensor="+(str);
+      
+      // Your Domain name with URL path or IP address with path
+      http.begin(serverPath.c_str());
+      //http.begin(serverPath);
+      Serial.print(serverPath.c_str());
+      // If you need Node-RED/server authentication, insert user and password below
+      //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+      
+      // Send HTTP GET request
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode>0) {
+        Serial.println("HTTP Response code: ");
+        Serial.println(httpResponseCode);
+        //String payload = http.getString();
+        //Serial.println(payload);
+      }
+      else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      // Free resources
+      http.end();
+    }
+    else {
+      Serial.println("WiFi Disconnected");
+    }
+    lastTime = millis();
+  }
+}
+
 void loop(){
   genRandomNum();
+  postToGoogleSheets();
 }
