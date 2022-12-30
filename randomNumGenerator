@@ -1,14 +1,23 @@
+/*
+ * This project is using TempLightsControlDataSheet AND sampleDoGet with
+ * https://script.google.com/macros/s/AKfycbx8QfX0oY0BvOSNl9-VaF9D6cVdrUslcoCaIbsKoP6gfcb4O6EL3eycXfPH1a02HURWJw/exec?read
+ * which gets the set temps from the TempLightsControl
+ * and
+ * https://script.google.com/macros/s/AKfycbzoLezGNttAMrk2Hgzwa_oWNkW5xeR7Qslu1qkTmds4AZyEGvn3US38eMavkXacOWWI/exec?date=1103&sensor=150,279,100,64,115,21,280,244,108,166,252,148,218,298,173,243
+ * sending the readTempArray csv string to sampleDoGet as a holder for what will be deviceTempReads
+*/
 #include <WiFi.h>
 #include <HTTPClient.h>
 
 #define DHTTYPE DHT11
-const char * ssid = "AcornLumaNet";
-const char * password = "TBOURNE5265";
-//const char * ssid = "Fios-JZOSU";
-//const char * password = "gem7070ace208pin";
+//const char * ssid = "AcornLumaNet";
+//const char * password = "TBOURNE5265";
+const char * ssid = "Fios-JZOSU";
+const char * password = "gem7070ace208pin";
 
 String serverName = "https://script.google.com/macros/s/AKfycbzoLezGNttAMrk2Hgzwa_oWNkW5xeR7Qslu1qkTmds4AZyEGvn3US38eMavkXacOWWI/exec";
-
+//String serverName = "https://script.google.com/macros/s/AKfycby4lYI-H6OmN-IgMGpnmhWfMV_J6KIK6_3Z3zjukhmyQhOsCHtM_X9Nh52SWayzwb-a5w/exec"; 
+//                   https://script.google.com/macros/s/AKfycby4lYI-H6OmN-IgMGpnmhWfMV_J6KIK6_3Z3zjukhmyQhOsCHtM_X9Nh52SWayzwb-a5w/exec                          
 const int ARRAY_SIZE = 16;
 const int deviceID = 6;
 long randNumber;
@@ -24,6 +33,15 @@ unsigned long timerDelay = 5000;
 int counter = 1;
 
 String str = "";
+
+//variables for getTempSettingsCSV
+int temp1;
+int temp2;
+int temp3;
+int temp4;
+int temp5;
+int temp6;
+int threshold;
 
 int randomArray[ARRAY_SIZE]={0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 void setup() {
@@ -118,7 +136,67 @@ void postToGoogleSheets(){
   }
 }
 
+void getTempSettingsCSV(){
+  HTTPClient http;
+  String url = "https://script.google.com/macros/s/AKfycbx8QfX0oY0BvOSNl9-VaF9D6cVdrUslcoCaIbsKoP6gfcb4O6EL3eycXfPH1a02HURWJw/exec?read";
+Serial.print("Making a request");
+  http.begin(url.c_str()); //Specify the URL and certificate
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  int httpCode = http.GET();
+  String payload;
+    if (httpCode > 0) { //Check for the returning code
+        payload = http.getString();
+        Serial.println(payload);
+        Serial.println("payload should have printed");
+        int commaIndex = payload.indexOf(',');
+        int secondCommaIndex = payload.indexOf(',',commaIndex +1);
+        int thirdCommaIndex = payload.indexOf(',',secondCommaIndex +1);
+        int fourthCommaIndex = payload.indexOf(',',thirdCommaIndex +1);
+        int fifthCommaIndex = payload.indexOf(',',fourthCommaIndex +1);
+        int sixthCommaIndex = payload.indexOf(',',fifthCommaIndex +1);
+       
+
+
+        String val1 = payload.substring(0, commaIndex);
+        String val2 = payload.substring(commaIndex+1, secondCommaIndex);
+        String val3 = payload.substring(secondCommaIndex+1, thirdCommaIndex);
+        String val4 = payload.substring(thirdCommaIndex+1, fourthCommaIndex);
+        String val5 = payload.substring(fourthCommaIndex+1, fifthCommaIndex);
+        String val6 = payload.substring(fifthCommaIndex+1, sixthCommaIndex);
+
+        temp1 = val1.toInt();
+        temp2 = val2.toInt();
+        temp3 = val3.toInt();
+        temp4 = val4.toInt();
+        temp5 = val5.toInt();
+        temp6 = val6.toInt();
+        //threshold = temp2;
+       
+       
+        //Serial.println(httpCode);
+        //Serial.println(payload);
+        //Serial.println(commaIndex);
+        Serial.println(temp1);
+        //Serial.println(secondCommaIndex);
+        Serial.println(temp2);
+        //Serial.println(thirdCommaIndex);
+        Serial.println(temp3);
+        //Serial.println(fourthCommaIndex);
+        Serial.println(temp4);
+        //Serial.println(fifthCommaIndex);
+        Serial.println(temp5);
+        //Serial.println(sixthCommaIndex);
+        Serial.println(temp6);
+
+      }
+    else {
+      Serial.println("Error on HTTP request");
+    }
+  http.end();
+}
+
 void loop(){
   genRandomNum();
   postToGoogleSheets();
+  getTempSettingsCSV();
 }
